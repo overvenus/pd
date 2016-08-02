@@ -15,6 +15,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -145,4 +146,41 @@ func (s *testMemberAPISuite) TestMemberList(c *C) {
 	buf, err = ioutil.ReadAll(resp.Body)
 	c.Assert(err, IsNil)
 	checkListResponse(c, buf, cfgs)
+}
+
+func (s *testMemberAPISuite) TestMemberDelete(c *C) {
+	cfgs, _, clean := mustNewCluster(c, 3)
+	defer clean()
+
+	foo := fmt.Sprintf("pd%d", rand.Int63())
+	parts := []string{"http://", cfgs[rand.Intn(len(cfgs))].HTTPAddr, "/api/v1/members", foo}
+	req, err := http.NewRequest(http.MethodDelete, strings.Join(parts, ""), nil)
+	c.Assert(err, IsNil)
+	resp, err := s.hc.Do(req)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, http.StatusNotFound)
+
+	someone := rand.Intn(len(cfgs))
+	parts = []string{"http://", cfgs[rand.Intn(len(cfgs))].HTTPAddr, "/api/v1/members", "/" + cfgs[someone].Name}
+	req, err = http.NewRequest(http.MethodDelete, strings.Join(parts, ""), nil)
+	c.Assert(err, IsNil)
+	resp, err = s.hc.Do(req)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Equals, http.StatusOK)
+
+	// delete again
+	req, err = http.NewRequest(http.MethodDelete, strings.Join(parts, ""), nil)
+	c.Assert(err, IsNil)
+	resp, err = s.hc.Do(req)
+	c.Assert(err, IsNil)
+	c.Assert(resp.StatusCode, Not(Equals), http.StatusOK)
+
+	// delete someone
+	newCfgs := append(cfgs[:someone], cfgs[someone+1:]...)
+	parts = []string{"http://", cfgs[rand.Intn(len(newCfgs))].HTTPAddr, "/api/v1/members"}
+	resp, err = s.hc.Get(strings.Join(parts, ""))
+	c.Assert(err, IsNil)
+	buf, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, IsNil)
+	checkListResponse(c, buf, newCfgs)
 }
