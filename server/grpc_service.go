@@ -278,8 +278,11 @@ func (s *Server) StoreHeartbeat(ctx context.Context, request *pdpb.StoreHeartbea
 		return nil, status.Errorf(codes.Unknown, err.Error())
 	}
 
+	// TODO(config): Load and push config to TiKV.
+
 	return &pdpb.StoreHeartbeatResponse{
 		Header: s.header(),
+		// TODO(config): config: ...
 	}, nil
 }
 
@@ -782,3 +785,6 @@ func (s *Server) incompatibleVersion(tag string) *pdpb.ResponseHeader {
 		Message: msg,
 	})
 }
+
+// func UpdateTiKV(...) { ... }
+// func UpdatePD(...) { ... }

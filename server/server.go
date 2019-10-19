@@ -126,7 +126,11 @@ func CreateServer(cfg *config.Config, apiRegister func(*Server) http.Handler) (*
 			pdAPIPrefix: apiRegister(s),
 		}
 	}
-	etcdCfg.ServiceRegister = func(gs *grpc.Server) { pdpb.RegisterPDServer(gs, s) }
+	etcdCfg.ServiceRegister = func(gs *grpc.Server) {
+		pdpb.RegisterPDServer(gs, s)
+		// TODO(config): register config service
+		// configpb.RegisterConfigServer(gs, s)
+	}
 	s.etcdCfg = etcdCfg
 	if EnableZap {
 		// The etcd master version has removed embed.Config.SetupLogging.
